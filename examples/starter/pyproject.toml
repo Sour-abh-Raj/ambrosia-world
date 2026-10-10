@@ -1,0 +1,11 @@
+[project]
+name = "starter-world"
+version = "0.1.0"
+requires-python = ">=3.11"
+dependencies = ["ambrosia-world"]
+
+[tool.uv]
+package = false
+
+[tool.uv.sources]
+ambrosia-world = { git = "https://github.com/Sour-abh-Raj/ambrosia-world" }

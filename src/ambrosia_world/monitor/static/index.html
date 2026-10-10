@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>World Monitor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script type="importmap">
+{ "imports": {
+  "three": "https://esm.sh/three@0.170.0",
+  "three/addons/": "https://esm.sh/three@0.170.0/examples/jsm/",
+  "3d-force-graph": "https://esm.sh/3d-force-graph@1.80.0?external=three",
+  "three-spritetext": "https://esm.sh/three-spritetext@1.9.6?external=three"
+} }
+</script>
+</head>
+<body>
+<div id="graph" aria-label="3D map of the world"></div>
+
+<header class="bar">
+  <div class="brand">
+    <span class="world" id="worldName">world</span>
+    <span class="where" id="where">connecting…</span>
+  </div>
+  <nav class="tabs" role="tablist">
+    <button role="tab" class="tab on" data-view="city" aria-selected="true">This city</button>
+    <button role="tab" class="tab" data-view="world" aria-selected="false">The world</button>
+  </nav>
+  <div class="chips">
+    <span class="chip"><b id="kCities">0</b> cities up</span>
+    <span class="chip gold"><b id="kAmbrosia">0</b> ambrosia</span>
+    <span class="chip"><b id="kSupply">0</b> in circulation</span>
+    <span class="chip"><b id="kTick">0</b> tick</span>
+  </div>
+</header>
+
+<aside class="rail left">
+  <h2>Live</h2>
+  <ol id="story" class="story"></ol>
+</aside>
+
+<aside class="rail right">
+  <section id="detail" class="card">
+    <h2>Selected</h2>
+    <div id="detailBody" class="muted">Click a city, building or citizen.</div>
+  </section>
+
+  <section class="card">
+    <h2>Economy</h2>
+    <svg id="spark" viewBox="0 0 240 48" preserveAspectRatio="none" aria-label="money supply over time"></svg>
+    <div class="row"><span class="muted">heaven</span><b id="eHeaven">0</b></div>
+    <div class="row"><span class="muted">compute burned</span><b id="eCompute">0</b></div>
+    <div class="row"><span class="muted">ledger drift</span><b id="eDrift">0</b></div>
+  </section>
+
+  <section class="card">
+    <h2>Jobs</h2>
+    <ul id="jobs" class="jobs"></ul>
+    <form id="commission" class="inline">
+      <select id="cPipeline" aria-label="pipeline"></select>
+      <input id="cSubject" placeholder="subject…" aria-label="subject">
+      <button>Commission</button>
+    </form>
+  </section>
+
+  <section class="card" id="connectCard" hidden>
+    <h2>Connect a city</h2>
+    <ol id="joinSteps" class="steps"></ol>
+    <form id="connect" class="inline">
+      <input id="pCity" placeholder="city id" aria-label="city id">
+      <input id="pHost" placeholder="IP address" aria-label="host">
+      <button>Add</button>
+    </form>
+  </section>
+</aside>
+
+<footer class="god">
+  <div id="godLog" class="godlog"></div>
+  <form id="godForm">
+    <span class="sigil">✶</span>
+    <input id="godInput" autocomplete="off" placeholder="Speak to God — “commission a paper on…”, “pause the writers”, “how is the economy?”">
+  </form>
+  <div id="godPending" class="pending" hidden></div>
+</footer>
+
+<script type="module" src="app.js"></script>
+</body>
+</html>

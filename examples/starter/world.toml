@@ -1,0 +1,89 @@
+# ─────────────────────────────────────────────────────────────────────────────
+#  THE CONTROL SHEET. One file governs the whole world; every city reads it.
+#  Change a value, restart the city (or ask God to `set` it).
+# ─────────────────────────────────────────────────────────────────────────────
+
+[world]
+name = "starter"
+seed = 1729                         # every id, worker choice and tiebreak derives from this
+mode = "semi_autonomous"            # manual | semi_autonomous | autonomous
+data_root = "~/.ambrosia-world"     # each city keeps its journal, queues and outbox here
+tick_seconds = 20
+env_file = "~/.ambrosia.env"        # KEY=VALUE lines: the road token and provider keys
+
+[heaven]
+city = "alpha"                      # heaven lives on the active city's machine
+accepts_provenance = ["live", "replay"]   # never "fixture": local text cannot mint ambrosia
+judge = true
+commission_pipeline = "brief"
+commission_topics = ["the cheapest way to cool a server room", "what makes a good onboarding doc"]
+target_live_jobs = 1
+
+[road]
+nats_version = "2.14.7"
+token_env = "AMBROSIA_ROAD_TOKEN"
+
+# ── cities: one per machine. Add a machine = add a block (or just run it: it joins as itself).
+[[cities]]
+id = "alpha"
+name = "Alpha"
+hostnames = ["my-laptop"]
+
+[[cities]]
+id = "beta"
+name = "Beta"
+host = "192.168.1.20"               # the IP other cities dial
+hub = true                          # accepts leaf connections (needs TCP 7422 open)
+hostnames = ["my-server"]
+
+# ── models: agents name a class; the router walks this chain, cheapest first.
+[models]
+classes = { operational = ["muse", "openrouter", "echo"], analytical = ["muse", "openrouter", "echo"] }
+max_concurrent_calls = 2
+calls_per_hour = 120
+
+[providers.muse]
+kind = "muse_cli"
+executable_globs = ["~/AppData/Local/Programs/muse/muse-bin-*.exe"]
+effort = { operational = "low", analytical = "high" }
+
+[providers.openrouter]
+kind = "openai_compat"
+base_url = "https://openrouter.ai/api/v1"
+key_envs = ["OPENROUTER_API_KEY"]
+models = { operational = ["openrouter/free"], analytical = ["openrouter/free"] }
+
+[providers.echo]                    # deterministic local text; provenance "fixture", never ambrosia
+kind = "echo"
+cost = 0
+
+[economy]
+wage = 5
+ambrosia_reward = 100
+tax_rate = 0.10
+
+# ── buildings: where the work happens. city = "*" means every city has one.
+[buildings.researcher]
+type = "core.prompt"
+city = "beta"
+area = "work"
+workers = 3
+params = { prompt = "Research '{subject}'. List the five facts that matter most, each with why.", output = "notes" }
+
+[buildings.writer]
+type = "core.prompt"
+city = "alpha"
+review = true                       # the manager reads it; one revision allowed
+params = { prompt = "Write a one-page brief on '{subject}' from these notes:\n{notes}", output = "document" }
+
+[buildings.library]
+type = "core.collect"
+area = "knowledge"
+params = { keys = ["notes", "document"] }
+
+[pipelines.brief]
+stages = ["researcher", "writer"]
+description = "research on beta, writing on alpha, judged in heaven"
+
+[knowledge]
+vault_paths = []                    # e.g. ["~/notes"] — markdown second brains to index
