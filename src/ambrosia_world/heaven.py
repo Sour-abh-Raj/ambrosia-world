@@ -13,6 +13,7 @@ announced to every city, whose economies reward the buildings that made it.
 """
 from __future__ import annotations
 
+import os
 import time
 from pathlib import Path
 from typing import Any
@@ -88,7 +89,8 @@ def _settle(job_id: str, d: dict[str, Any]) -> str:
     job = P.load(job_id)
     v = d.get("verdict")
     if v == "pass":
-        out = rt.data / rt.charter.heaven.output_dir
+        od = Path(os.path.expanduser(rt.charter.heaven.output_dir))
+        out = od if od.is_absolute() else rt.data / od
         out.mkdir(parents=True, exist_ok=True)
         path = out / f"{job.id}.md"
         path.write_text(_document(job), encoding="utf-8")

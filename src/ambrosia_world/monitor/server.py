@@ -132,5 +132,12 @@ def create_app(rt) -> FastAPI:
                           f"put {rt.charter.road.token_env}=<the world token> in its env file",
                           "python world.py up   (it dials the hub, every monitor shows it within seconds)"]}
 
+    @app.middleware("http")
+    async def no_stale_monitor(request: Request, call_next):
+        resp = await call_next(request)
+        if not request.url.path.startswith("/api/"):
+            resp.headers["Cache-Control"] = "no-cache"
+        return resp
+
     app.mount("/", StaticFiles(directory=STATIC, html=True), name="static")
     return app

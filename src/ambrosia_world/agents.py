@@ -42,6 +42,14 @@ class Ctx:
         self.feedback = ""
         self.provenances: list[str] = []
         self.notes: list[str] = []
+        # A stage visited again after a failure must not replay the failing answer from
+        # the cache, and should know why it was sent back.
+        past = [h for h in job.history if h.get("stage") == building]
+        self.revisit = bool(past)
+        if past and past[-1].get("verdict") != "pass" and past[-1].get("reason"):
+            self.feedback = str(past[-1]["reason"])[:600]
+        elif job.payload.get("heaven_feedback") and self.revisit:
+            self.feedback = str(job.payload["heaven_feedback"])[:600]
 
     def ask(self, prompt: str, system: str = "", cls: str | None = None) -> str:
         cls = cls or self.spec.model_class
@@ -49,7 +57,8 @@ class Ctx:
                    default=0.0)
         if not self.rt.economy.can_afford(self.building, cost):
             raise Starved(f"{self.building} cannot afford a {cls} call (treasury below {cost})")
-        a = self.rt.router.ask(cls, prompt, system, building=self.building, job=self.job.id)
+        a = self.rt.router.ask(cls, prompt, system, building=self.building, job=self.job.id,
+                               use_cache=not self.revisit)
         self.provenances.append(a.provenance)
         return a.text
 

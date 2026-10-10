@@ -227,6 +227,8 @@ After=network-online.target
 
 [Service]
 WorkingDirectory={entry.parent}
+Environment=PATH={os.environ.get("PATH", "")}
+Environment=PYTHONIOENCODING=utf-8
 ExecStart={shutil.which('python3') or py} {entry} up
 Restart=always
 RestartSec=10
@@ -241,9 +243,21 @@ WantedBy=default.target
         vbs = ch.data_dir(me) / f"{name}.vbs"
         pyw = Path(py).with_name("pythonw.exe")
         vbs.write_text(f'CreateObject("WScript.Shell").Run """{pyw if pyw.exists() else py}"" ""{entry}"" up", 0, False\r\n')
-        subprocess.run(["schtasks", "/Create", "/F", "/SC", "ONLOGON", "/RL", "LIMITED", "/TN", name,
-                        "/TR", f'wscript.exe "{vbs}"'], check=False)
-        typer.echo(f"scheduled task {name} runs {entry} hidden at logon")
+        # A per-user logon trigger needs no elevation through the ScheduledTasks module
+        # (schtasks /SC ONLOGON does). Hidden: wscript runs pythonw with window style 0.
+        ps = (f"$a = New-ScheduledTaskAction -Execute 'wscript.exe' -Argument '\"{vbs}\"'; "
+              "$t = New-ScheduledTaskTrigger -AtLogOn -User $env:USERNAME; "
+              "$s = New-ScheduledTaskSettingsSet -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries "
+              "-ExecutionTimeLimit (New-TimeSpan -Seconds 0) -MultipleInstances IgnoreNew; "
+              f"Register-ScheduledTask -TaskName '{name}' -Action $a -Trigger $t -Settings $s "
+              f"-Description 'Ambrosia world {ch.world.name}, city {me} (hidden)' -Force | Out-Null")
+        r = subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command", ps],
+                           capture_output=True, text=True)
+        if r.returncode:
+            raise typer.Exit(_err(r.stderr.strip()[-400:]))
+        subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                        f"Start-ScheduledTask -TaskName '{name}'"], check=False)
+        typer.echo(f"scheduled task {name} runs {entry} hidden at logon, and is running now")
     else:
         raise typer.Exit(_err("only Linux and Windows are supported"))
 
@@ -256,7 +270,8 @@ def svc_uninstall():
         subprocess.run(["systemctl", "--user", "disable", "--now", f"{name}.service"], check=False)
         (Path.home() / ".config/systemd/user" / f"{name}.service").unlink(missing_ok=True)
     elif platform.system() == "Windows":
-        subprocess.run(["schtasks", "/Delete", "/F", "/TN", name], check=False)
+        subprocess.run(["powershell", "-NoProfile", "-NonInteractive", "-Command",
+                        f"Unregister-ScheduledTask -TaskName '{name}' -Confirm:$false"], check=False)
     typer.echo(f"removed {name}")
 
 
